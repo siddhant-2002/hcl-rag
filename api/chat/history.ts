@@ -1,7 +1,7 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
-import { connectDB } from "../../lib/db";
-import { authenticate } from "../../lib/auth";
-import { ChatSessionModel } from "../../lib/models";
+import { connectDB } from "../lib/db";
+import { authenticate } from "../lib/auth";
+import { ChatSessionModel } from "../lib/models";
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   await connectDB();

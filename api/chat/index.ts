@@ -1,9 +1,9 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
 import { GoogleGenAI } from "@google/genai";
-import { connectDB } from "../../lib/db";
-import { authenticate } from "../../lib/auth";
-import { KnowledgeSourceModel } from "../../lib/models";
-import { retrieveRelevantChunks } from "../../lib/rag";
+import { connectDB } from "../lib/db";
+import { authenticate } from "../lib/auth";
+import { KnowledgeSourceModel } from "../lib/models";
+import { retrieveRelevantChunks } from "../lib/rag";
 
 let aiClient: GoogleGenAI | null = null;
 function getGeminiClient(): GoogleGenAI {
