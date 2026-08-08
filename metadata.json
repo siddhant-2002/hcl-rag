@@ -1,8 +1,0 @@
-{
-  "name": "HCL RAG - HCL AI Powered Enterprise Search",
-  "description": "Enterprise-grade RAG chatbot that answers questions using HCL's internal knowledge base with AI-powered search and data retrieval.",
-  "requestFramePermissions": [],
-  "majorCapabilities": [
-    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
-  ]
-}

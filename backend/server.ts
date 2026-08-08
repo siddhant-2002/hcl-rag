@@ -4,7 +4,6 @@ import crypto from "crypto";
 import dns from "dns";
 import multer from "multer";
 import { GoogleGenAI } from "@google/genai";
-import { createServer as createViteServer } from "vite";
 import mongoose from "mongoose";
 import { KnowledgeSource, Message } from "./src/types";
 
@@ -13,7 +12,7 @@ import dotenv from "dotenv";
 dotenv.config();
 
 const app = express();
-const PORT = 3000;
+const PORT = 3001;
 
 const AUTH_USERNAME = process.env.AUTH_USERNAME || "admin";
 const AUTH_PASSWORD = process.env.AUTH_PASSWORD || "password";
@@ -327,7 +326,7 @@ const requireAuth = async (req: Request, res: Response, next: express.NextFuncti
       }
     }
 
-    // Fallback admin credentials — use a stable string as userId
+    // Fallback admin credentials â€” use a stable string as userId
     if (username === AUTH_USERNAME && password === AUTH_PASSWORD) {
       req.userId = `admin:${AUTH_USERNAME}`;
       return next();
@@ -590,7 +589,7 @@ app.post("/api/forgot-password/request", async (req: Request, res: Response) => 
 
 
 /* ==========================================================================
-   KNOWLEDGE SOURCE ENDPOINTS (Protected — MongoDB)
+   KNOWLEDGE SOURCE ENDPOINTS (Protected â€” MongoDB)
    ========================================================================== */
 
 // Helper: serialize a Mongoose KnowledgeSource doc to API shape
@@ -605,7 +604,7 @@ function serializeSource(doc: any) {
   };
 }
 
-// 1. GET /api/sources — list all sources for user (metadata only)
+// 1. GET /api/sources â€” list all sources for user (metadata only)
 app.get("/api/sources", requireAuth, async (req: Request, res: Response) => {
   try {
     const docs = await KnowledgeSourceModel.find({ userId: req.userId }).sort({ createdAt: -1 });
@@ -615,7 +614,7 @@ app.get("/api/sources", requireAuth, async (req: Request, res: Response) => {
   }
 });
 
-// 2. GET /api/sources/:id — get single source with full content
+// 2. GET /api/sources/:id â€” get single source with full content
 app.get("/api/sources/:id", requireAuth, async (req: Request, res: Response) => {
   try {
     const doc = await KnowledgeSourceModel.findOne({ _id: req.params.id, userId: req.userId });
@@ -626,7 +625,7 @@ app.get("/api/sources/:id", requireAuth, async (req: Request, res: Response) => 
   }
 });
 
-// 3. GET /api/sources/:id/content — alias for full content
+// 3. GET /api/sources/:id/content â€” alias for full content
 app.get("/api/sources/:id/content", requireAuth, async (req: Request, res: Response) => {
   try {
     const doc = await KnowledgeSourceModel.findOne({ _id: req.params.id, userId: req.userId });
@@ -637,7 +636,7 @@ app.get("/api/sources/:id/content", requireAuth, async (req: Request, res: Respo
   }
 });
 
-// 4. POST /api/sources/text — save pasted text
+// 4. POST /api/sources/text â€” save pasted text
 app.post("/api/sources/text", requireAuth, async (req: Request, res: Response) => {
   const { name, content } = req.body;
   if (!name || !content) {
@@ -663,7 +662,7 @@ app.post("/api/sources/text", requireAuth, async (req: Request, res: Response) =
   }
 });
 
-// 5. POST /api/sources/file — upload text file
+// 5. POST /api/sources/file â€” upload text file
 app.post("/api/sources/file", requireAuth, upload.single("file"), async (req: Request, res: Response) => {
   if (!req.file) {
     return res.status(400).json({ error: "No file was uploaded." });
@@ -775,10 +774,10 @@ app.delete("/api/sources/:id", requireAuth, async (req: Request, res: Response) 
 });
 
 /* ==========================================================================
-   CHAT HISTORY ENDPOINTS (Protected — MongoDB)
+   CHAT HISTORY ENDPOINTS (Protected â€” MongoDB)
    ========================================================================== */
 
-// GET /api/chat/history — load saved chat session for this user
+// GET /api/chat/history â€” load saved chat session for this user
 app.get("/api/chat/history", requireAuth, async (req: Request, res: Response) => {
   try {
     const session = await ChatSessionModel.findOne({ userId: req.userId });
@@ -789,7 +788,7 @@ app.get("/api/chat/history", requireAuth, async (req: Request, res: Response) =>
   }
 });
 
-// POST /api/chat/history — upsert entire messages array for this user
+// POST /api/chat/history â€” upsert entire messages array for this user
 app.post("/api/chat/history", requireAuth, async (req: Request, res: Response) => {
   const { messages } = req.body;
   if (!Array.isArray(messages)) {
@@ -807,7 +806,7 @@ app.post("/api/chat/history", requireAuth, async (req: Request, res: Response) =
   }
 });
 
-// DELETE /api/chat/history — clear chat for this user
+// DELETE /api/chat/history â€” clear chat for this user
 app.delete("/api/chat/history", requireAuth, async (req: Request, res: Response) => {
   try {
     await ChatSessionModel.findOneAndUpdate(
@@ -929,31 +928,27 @@ User Query: ${message}`;
 });
 
 /* ==========================================================================
-   VITE DEV SERVER & STATIC FILE SERVING
+   START SERVER
    ========================================================================== */
 
-async function startServer() {
-  if (process.env.NODE_ENV !== "production") {
-    // In development mode, mount Vite middleware to enable HMR and live compilation
-    const vite = await createViteServer({
-      server: { middlewareMode: true },
-      appType: "spa",
-    });
-    app.use(vite.middlewares);
-    console.log("Vite development middleware mounted successfully.");
-  } else {
-    // Serve pre-built static client files in production
-    const distPath = path.join(process.cwd(), "dist");
-    app.use(express.static(distPath));
-    app.get("*", (req, res) => {
-      res.sendFile(path.join(distPath, "index.html"));
-    });
-    console.log("Serving static pre-built assets from /dist.");
+// CORS: allow requests from the frontend dev server and production origin
+app.use((req, res, next) => {
+  const allowedOrigins = [
+    "http://localhost:5173",
+    process.env.FRONTEND_URL || "",
+  ].filter(Boolean);
+  const origin = req.headers.origin || "";
+  if (allowedOrigins.includes(origin) || !origin) {
+    res.setHeader("Access-Control-Allow-Origin", origin || "*");
+    res.setHeader("Access-Control-Allow-Methods", "GET,POST,DELETE,OPTIONS");
+    res.setHeader("Access-Control-Allow-Headers", "Content-Type,Authorization");
+    res.setHeader("Access-Control-Allow-Credentials", "true");
   }
+  if (req.method === "OPTIONS") return res.sendStatus(204);
+  next();
+});
 
-  app.listen(PORT, "0.0.0.0", () => {
-    console.log(`Minimalist RAG Chatbot running on http://0.0.0.0:${PORT}`);
-  });
-}
+app.listen(PORT, "0.0.0.0", () => {
+  console.log(`HCL RAG Backend API running on http://0.0.0.0:${PORT}`);
+});
 
-startServer();
